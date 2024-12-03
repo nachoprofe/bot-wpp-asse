@@ -11,7 +11,7 @@ openai.api_key = os.environ.get("OPENAI_API_KEY")
 def generate_response(message):
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Asegúrate de que tienes acceso a este modelo
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "Eres un asistente médico en Uruguay. Responde de forma clara y empática."},
                 {"role": "user", "content": message}
@@ -21,15 +21,17 @@ def generate_response(message):
     except Exception as e:
         return f"Error al generar la respuesta: {str(e)}"
 
-# Endpoint para el webhook
+# Webhook para Twilio
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.json
-    user_message = data.get("message", "")
+    data = request.form
+    user_message = data.get("Body", "")
+    sender = data.get("From", "")
+
     if user_message:
         bot_response = generate_response(user_message)
-        return jsonify({"response": bot_response})
-    return jsonify({"error": "No se recibió un mensaje"}), 400
+        return f"<Response><Message>{bot_response}</Message></Response>", 200, {'Content-Type': 'application/xml'}
+    return "No message received", 400
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7002))
